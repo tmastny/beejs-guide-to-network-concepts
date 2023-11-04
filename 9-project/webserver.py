@@ -44,7 +44,7 @@ def recieve(s):
     method, path, _ = firstline.split(" ") # protocol
 
     headers = req_parts[0].split("\r\n")[1:]
-    body = req_parts[0]
+    body = req_parts[1]
 
     Req = namedtuple("Req", ["method", "path", "headers", "body"])
     return Req(method, path, headers, body)
