@@ -35,7 +35,6 @@ def recieve_all_bytes(s) -> bytes:
     return req
 
 
-# -> ((method, path), headers, body)
 def recieve(s):
     req = recieve_all_bytes(s)
     req_parts = req.decode().split("\r\n\r\n")
