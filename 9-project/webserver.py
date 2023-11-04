@@ -1,8 +1,8 @@
+from collections import namedtuple
 import socket
 import sys
 
-
-def recieve(s) -> bytes:
+def recieve_all_bytes(s) -> bytes:
     req = b""
     
     # recieve headers
@@ -35,6 +35,21 @@ def recieve(s) -> bytes:
     return req
 
 
+# -> ((method, path), headers, body)
+def recieve(s):
+    req = recieve_all_bytes(s)
+    req_parts = req.decode().split("\r\n\r\n")
+    
+    firstline = req_parts[0].split("\r\n")[0]
+    method, path, _ = firstline.split(" ") # protocol
+
+    headers = req_parts[0].split("\r\n")[1:]
+    body = req_parts[0]
+
+    Req = namedtuple("Req", ["method", "path", "headers", "body"])
+    return Req(method, path, headers, body)
+
+
 port = 28333
 if len(sys.argv) > 1:
     port = sys.argv[1]
@@ -54,7 +69,7 @@ while True:
     req = recieve(new_socket)
     print(req)
 
-    if req.startswith(b"GET"):
+    if req.method == "GET":
         resp = [
             "HTTP/1.1 200 OK",
             "Content-Type: text/plain",
@@ -63,9 +78,8 @@ while True:
             "",
             "Hello!",
         ]
-    elif req.startswith(b"POST"):
-        body = req.decode().split("\r\n\r\n")[1]
-        print(body)
+    elif req.method == "POST":
+        print(req.body)
 
         message = "Hello! Post recieved."
         resp = [
