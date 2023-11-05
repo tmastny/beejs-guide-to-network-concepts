@@ -44,6 +44,9 @@ def recieve(s):
     firstline = req_parts[0].split("\r\n")[0]
     method, path, _ = firstline.split(" ")  # protocol
 
+    # ignore leading "/". Return empty string if only "/"
+    path = "/".join(path.split("/")[1:])
+
     headers = req_parts[0].split("\r\n")[1:]
     body = req_parts[1]
 
@@ -52,27 +55,6 @@ def recieve(s):
 
 
 def handle_get(req):
-    if req.path == "/":
-        files = [file for file in os.listdir() if os.path.splitext(file)[1] != ".py"]
-        htmlized_files = [
-            f'<li><a href="http://localhost:{port}/{file}">{file}</a></li>'
-            for file in files
-        ]
-
-        body = (
-            "<!DOCTYPE html><html><head><title>Available Files</title></head>"
-            + f'<body><h1>Available Files</h1><ul>{"".join(htmlized_files)}</ul></body>'
-        )
-
-        return [
-            "HTTP/1.1 200 OK",
-            "Content-type: text/html",
-            f"Content-Length: {len(body)}",
-            "Connection: close",
-            "",
-            body,
-        ]
-
     # test that supplied path is within server directory
     req_realpath = os.path.realpath(req.path)
     server_realpath = os.path.realpath(".")
@@ -87,15 +69,52 @@ def handle_get(req):
             body,
         ]
 
-    _, file = os.path.split(req.path)
-    # if os.path.isdir(file):
-    #     # compare os.path.realpath(file)
-    #     # with os.path.reralpath("."), the root of directory
-    #     pass
+    # serve directory
+    if os.path.isdir(req_realpath):
+        htmlized_files = []
 
-    # os.path.realpath
+        # add link to parent directory if not server root
+        if req_realpath != server_realpath:
+            pathprefix = os.path.commonprefix([server_realpath, req_realpath])
+            dir_urlpath = req_realpath.removeprefix(pathprefix)
 
-    _, ext = os.path.splitext(file)
+            parentdir_html = (
+                f'<li><a href="http://localhost:{port}{dir_urlpath}/..">..</a></li>'
+            )
+            htmlized_files.append(parentdir_html)
+
+        # add link to accessible files
+        files = [
+            file
+            for file in os.listdir(req_realpath)
+            if os.path.splitext(file)[1] != ".py"
+        ]
+
+        for file in files:
+            file_realpath = os.path.join(req_realpath, file)
+            pathprefix = os.path.commonprefix([server_realpath, file_realpath])
+            file_urlpath = file_realpath.removeprefix(pathprefix)
+            htmlized_files.append(
+                f'<li><a href="http://localhost:{port}{file_urlpath}">{file}</a></li>'
+            )
+
+        body = (
+            "<!DOCTYPE html><html><head><title>Available Files</title></head>"
+            + f"<body><h1>Available Files</h1>"
+            + f'<ul>{"".join(htmlized_files)}</ul></body>'
+        )
+
+        return [
+            "HTTP/1.1 200 OK",
+            "Content-type: text/html",
+            f"Content-Length: {len(body)}",
+            "Connection: close",
+            "",
+            body,
+        ]
+
+    # serve a file
+    _, ext = os.path.splitext(req_realpath)
 
     ext_to_content_type = {
         ".txt": "text/plain",
@@ -103,6 +122,7 @@ def handle_get(req):
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
     }
+
     if ext not in ext_to_content_type:
         body = f"404 Not Found. Content-Type {ext} not supported."
         return [
@@ -116,7 +136,7 @@ def handle_get(req):
     http_resp = "HTTP/1.1 200 OK"
     content_type = f"Content-type: {ext_to_content_type[ext]}"
     try:
-        with open(file, mode="rb") as f:
+        with open(req_realpath, mode="rb") as f:
             body = f.read()
     except:
         http_resp = "HTTP/1.1 404 Not Found"
