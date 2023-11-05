@@ -76,7 +76,12 @@ def handle_get(req):
     _, file = os.path.split(req.path)
     _, ext = os.path.splitext(file)
 
-    ext_to_content_type = {".txt": "text/plain", ".html": "text/html"}
+    ext_to_content_type = {
+        ".txt": "text/plain",
+        ".html": "text/html",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+    }
     if ext not in ext_to_content_type:
         body = f"404 Not Found. Content-Type {ext} not supported."
         return [
@@ -88,16 +93,18 @@ def handle_get(req):
         ]
 
     http_resp = "HTTP/1.1 200 OK"
+    content_type = f"Content-type: {ext_to_content_type[ext]}"
     try:
-        with open(file, mode="r") as f:
+        with open(file, mode="rb") as f:
             body = f.read()
     except:
         http_resp = "HTTP/1.1 404 Not Found"
+        content_type = "text/plain"
         body = "404 Not Found"
 
     return [
         http_resp,
-        f"Content-type: {ext_to_content_type[ext]}",
+        content_type,
         f"Content-Length: {len(body)}",
         "Connection: close",
         "",
@@ -141,8 +148,16 @@ while True:
     else:
         resp = ["HTTP/1.1 405 Method Not Allowed"]
 
-    resp = "\r\n".join(resp) + "\r\n\r\n"
-    resp = resp.encode()
+    bresp = []
+    for part in resp:
+        if isinstance(part, str):
+            bresp.append(part.encode())
+        elif isinstance(part, bytes):
+            bresp.append(part)
+        else:
+            raise ValueError(f"Unsupported class {type(part)}")
 
-    new_socket.sendall(resp)
+    bresp = b"\r\n".join(bresp) + b"\r\n\r\n"
+
+    new_socket.sendall(bresp)
     new_socket.close()
