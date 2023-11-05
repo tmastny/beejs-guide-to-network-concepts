@@ -73,7 +73,28 @@ def handle_get(req):
             body,
         ]
 
+    # test that supplied path is within server directory
+    req_realpath = os.path.realpath(req.path)
+    server_realpath = os.path.realpath(".")
+    req_server_commonpath = os.path.commonpath([req_realpath, server_realpath])
+    if req_server_commonpath != server_realpath:
+        body = "404 Not Found"
+        return [
+            "HTTP/1.1 404 Not Found",
+            "Content-Type: text/plain",
+            f"Content-Length: {len(body)}",
+            "",
+            body,
+        ]
+
     _, file = os.path.split(req.path)
+    # if os.path.isdir(file):
+    #     # compare os.path.realpath(file)
+    #     # with os.path.reralpath("."), the root of directory
+    #     pass
+
+    # os.path.realpath
+
     _, ext = os.path.splitext(file)
 
     ext_to_content_type = {
