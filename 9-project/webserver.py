@@ -60,7 +60,7 @@ def handle_get(req):
     server_realpath = os.path.realpath(".")
     req_server_commonpath = os.path.commonpath([req_realpath, server_realpath])
     if req_server_commonpath != server_realpath:
-        body = "404 Not Found"
+        body = "404 Not Found. No sneaking out of the server!"
         return [
             "HTTP/1.1 404 Not Found",
             "Content-Type: text/plain",
