@@ -4,7 +4,7 @@ import sys
 
 def recieve(s) -> bytes:
     req = b""
-    
+
     # recieve headers
     while True:
         print("waiting to recv...")
@@ -19,8 +19,8 @@ def recieve(s) -> bytes:
     content_length = 0
     for line in reqlines:
         if line == "":
-            # The next lines are part of the body. 
-            # We don't want to search them 
+            # The next lines are part of the body.
+            # We don't want to search them
             break
         elif "Content-Length" in line:
             content_length = int(line.removeprefix("Content-Length: "))

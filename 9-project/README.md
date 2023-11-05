@@ -1,8 +1,8 @@
 # todo
 
 Serve files. 
-- [ ] parse headers
-- [ ] parse first line of headers
-- [ ] parse file from first line of header
+- [X] parse headers
+- [X] parse first line of headers
+- [X] parse path from first line of header
 - [ ] find that file in server directory and send as response
 
