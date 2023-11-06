@@ -1,4 +1,7 @@
 # Some common English words
+import string
+
+LONG_WORDS = [letter * 256 for letter in string.ascii_letters] 
 
 WORDS = [
     "the", "be", "and", "a", "of", "to", "in", "you", "it", "have",
@@ -25,7 +28,7 @@ WORDS = [
     "so", "seem", "might", "part", "hear", "its", "place", "problem",
     "where", "believe", "country", "always", "week", "point", "hand",
     "off", "play", "turn", "few", "group", "such"
-]   
+] + LONG_WORDS   
 
 import sys
 import socket
