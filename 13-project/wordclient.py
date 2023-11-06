@@ -1,15 +1,34 @@
+from typing import Union
 import sys
 import socket
 
 # How many bytes is the word length?
 WORD_LEN_SIZE = 2
+RECV_SIZE = 5
 
 def usage():
     print("usage: wordclient.py server port", file=sys.stderr)
 
 packet_buffer = b''
 
-def get_next_word_packet(s):
+def get_word_from_buffer(buffer: bytes) -> Union[bytes, None]:
+    if len(buffer) < 2:
+        return None
+
+    nbytes = int.from_bytes(buffer[0:2]) + 2
+
+    # why not just extract the word here? with range(2, ...)
+    word = b''
+    for i in range(min(len(buffer), nbytes)):
+        word += buffer[i:i + 1] 
+
+    if len(word) == nbytes:
+        return word
+
+    return None
+
+
+def get_next_word_packet(s: socket.socket):
     """
     Return the next word packet from the stream.
 
@@ -22,7 +41,14 @@ def get_next_word_packet(s):
 
     global packet_buffer
 
-    # TODO -- Write me!
+    while True:
+        if word := get_word_from_buffer(packet_buffer): 
+            packet_buffer = packet_buffer[len(word):]
+            return word
+
+        packet_buffer += s.recv(RECV_SIZE)
+        if packet_buffer == b'':
+            return None
 
 
 def extract_word(word_packet):
@@ -34,8 +60,8 @@ def extract_word(word_packet):
 
     Returns the word decoded as a string.
     """
-
-    # TODO -- Write me!
+    
+    return word_packet[2:].decode()
 
 # Do not modify:
 
