@@ -6,7 +6,7 @@ def ip2b(ip) -> bytes:
     return ipb
 
 
-def checksum(dat: bytes):
+def checksum(dat: bytes) -> int:
     if len(dat) % 2 == 1:
         dat += b"\x00"
 
