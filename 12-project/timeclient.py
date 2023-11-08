@@ -38,13 +38,8 @@ print(f"NIST time  : {nist_time_ne}")
 print(f"System time: {sys_time_ne}")
 
 nist_time_ue = nist_time_ne - unix_epoch_ne
-data = [
-    ("NIST time  :", nist_time_ue), 
-    ("System time:", sys_time_ue)
-] 
+data = [("NIST time  :", nist_time_ue), ("System time:", sys_time_ue)]
 
 for label, etime in data:
     formatted_time = time.strftime("%d %b %Y %H:%M %Z", time.gmtime(etime))
     print(f"{label} {formatted_time}")
-
-

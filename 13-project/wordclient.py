@@ -6,10 +6,13 @@ import socket
 WORD_LEN_SIZE = 2
 RECV_SIZE = 5
 
+
 def usage():
     print("usage: wordclient.py server port", file=sys.stderr)
 
-packet_buffer = b''
+
+packet_buffer = b""
+
 
 def get_word_from_buffer(buffer: bytes) -> Union[bytes, None]:
     if len(buffer) < 2:
@@ -18,9 +21,9 @@ def get_word_from_buffer(buffer: bytes) -> Union[bytes, None]:
     nbytes = int.from_bytes(buffer[0:2]) + 2
 
     # why not just extract the word here? with range(2, ...)
-    word = b''
+    word = b""
     for i in range(min(len(buffer), nbytes)):
-        word += buffer[i:i + 1] 
+        word += buffer[i : i + 1]
 
     if len(word) == nbytes:
         return word
@@ -42,12 +45,12 @@ def get_next_word_packet(s: socket.socket):
     global packet_buffer
 
     while True:
-        if word := get_word_from_buffer(packet_buffer): 
-            packet_buffer = packet_buffer[len(word):]
+        if word := get_word_from_buffer(packet_buffer):
+            packet_buffer = packet_buffer[len(word) :]
             return word
 
         packet_buffer += s.recv(RECV_SIZE)
-        if packet_buffer == b'':
+        if packet_buffer == b"":
             return None
 
 
@@ -60,10 +63,12 @@ def extract_word(word_packet):
 
     Returns the word decoded as a string.
     """
-    
+
     return word_packet[2:].decode()
 
+
 # Do not modify:
+
 
 def main(argv):
     try:
@@ -89,6 +94,7 @@ def main(argv):
         print(f"    {word}")
 
     s.close()
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

@@ -18,8 +18,7 @@ s.bind(("", port))
 while True:
     # Get data
     data, sender = s.recvfrom(4096)
-    print(f"Got data from {sender[0]}:{sender[1]}: \"{data.decode()}\"")
+    print(f'Got data from {sender[0]}:{sender[1]}: "{data.decode()}"')
 
     # Send a reply back to the original sender
     s.sendto(f"Got your {len(data)} byte(s) of data!".encode(), sender)
-

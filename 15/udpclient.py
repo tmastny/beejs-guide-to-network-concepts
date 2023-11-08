@@ -19,7 +19,6 @@ s.sendto(message.encode(), (server, port))
 
 # Wait for a reply
 data, sender = s.recvfrom(4096)
-print(f"Got reply: \"{data.decode()}\"")
+print(f'Got reply: "{data.decode()}"')
 
 s.close()
-
