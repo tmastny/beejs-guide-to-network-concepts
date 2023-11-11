@@ -13,11 +13,13 @@ import socket
 import time
 import random
 
+
 def usage():
     print("usage: select_client.py prefix host port", file=sys.stderr)
 
+
 def random_string():
-    """ Returns a random string of ASCII printable characters. """
+    """Returns a random string of ASCII printable characters."""
 
     length = random.randrange(10, 20)
     s = ""
@@ -28,9 +30,11 @@ def random_string():
 
     return s
 
+
 def delay_random_time():
     delay_seconds = random.uniform(1, 5)
     time.sleep(delay_seconds)
+
 
 def main(argv):
     try:
@@ -52,6 +56,7 @@ def main(argv):
         s.send(string_bytes)
 
         delay_random_time()
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
