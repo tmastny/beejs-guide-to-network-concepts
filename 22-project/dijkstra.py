@@ -4,21 +4,22 @@ import math  # If you want to use math.inf for infinity
 import heapq
 from netfuncs import find_router_for_ip
 
+
 def shortest_path(adj: dict, weight: dict, start, end):
     dist = {}
     for v in adj:
-        dist[v] = math.inf 
-    
+        dist[v] = math.inf
+
     dist[start] = 0
-    
-    pqueue = [(dist[start], start)] 
+
+    pqueue = [(dist[start], start)]
     heapq.heapify(pqueue)
 
     prev = {start: start}
     visited = set()
     while pqueue:
         distv, v = heapq.heappop(pqueue)
-        
+
         if v in visited:
             continue
         else:
@@ -29,9 +30,9 @@ def shortest_path(adj: dict, weight: dict, start, end):
                 dist[u] = distv + weight[(v, u)]
                 prev[u] = v
                 heapq.heappush(pqueue, (dist[u], u))
-    
+
     path = []
-    node = end 
+    node = end
     while node != start:
         path.append(node)
         node = prev[node]
@@ -95,10 +96,10 @@ def dijkstras_shortest_path(routers: dict, src_ip: str, dest_ip: str):
     function. Having it all built as a single wall of code is a recipe
     for madness.
     """
-    
+
     src_router_ip = find_router_for_ip(routers, src_ip)
     dest_router_ip = find_router_for_ip(routers, dest_ip)
-    
+
     if src_router_ip == dest_router_ip:
         return []
 
@@ -113,26 +114,28 @@ def dijkstras_shortest_path(routers: dict, src_ip: str, dest_ip: str):
 
             weight[(ip, connected_ip)] = connected_ip_info["ad"]
 
-    return shortest_path(adj, weight, src_router_ip, dest_router_ip)     
-     
+    return shortest_path(adj, weight, src_router_ip, dest_router_ip)
 
 
-#------------------------------
+# ------------------------------
 # DO NOT MODIFY BELOW THIS LINE
-#------------------------------
+# ------------------------------
 def read_routers(file_name):
     with open(file_name) as fp:
         data = fp.read()
 
     return json.loads(data)
 
+
 def find_routes(routers, src_dest_pairs):
     for src_ip, dest_ip in src_dest_pairs:
         path = dijkstras_shortest_path(routers, src_ip, dest_ip)
         print(f"{src_ip:>15s} -> {dest_ip:<15s}  {repr(path)}")
 
+
 def usage():
     print("usage: dijkstra.py infile.json", file=sys.stderr)
+
 
 def main(argv):
     try:
@@ -148,6 +151,6 @@ def main(argv):
 
     find_routes(routers, routes)
 
+
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
-    

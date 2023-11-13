@@ -2,6 +2,7 @@ from unicurses import *
 
 upper_window = None
 
+
 def init_windows():
     global stdscr
     global upper_window
@@ -18,6 +19,7 @@ def init_windows():
     upper_window = newwin(lines - 3, cols, 0, 0)
     wmove(upper_window, 0, 0)
     scrollok(upper_window, True)
+
 
 def read_command(prompt="> "):
     lines, _ = getmaxyx(stdscr)
@@ -38,10 +40,11 @@ def read_command(prompt="> "):
     # cbreak-aware getstr() with getch().
 
     for c in s:
-        if c == '\x03':
+        if c == "\x03":
             raise KeyboardInterrupt
 
     return s
+
 
 def print_message(s):
     global upper_window
@@ -56,10 +59,10 @@ def print_message(s):
 
     refresh()
 
+
 def end_windows():
     clear()
     refresh()
     nocbreak()
     noraw()
     endwin()
-
