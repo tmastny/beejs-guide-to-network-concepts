@@ -18,6 +18,9 @@ def send_response(response, sockets, listener):
 
 def parse_packet(packet, client_info: dict) -> dict:
     print(packet)
+    if packet == None:
+        return {"type": "leave", "nick": client_info["nick"]}
+
     payload = json.loads(packet)
 
     if payload["type"] == "hello":
@@ -65,10 +68,6 @@ def run_server(port):
     soc_buffers = {}
     client_info = {}
 
-    import ipdb
-
-    ipdb.set_trace()
-
     while True:
         ready_to_read, _, _ = select.select(sockets, {}, {})
 
@@ -82,12 +81,11 @@ def run_server(port):
                 continue
 
             packet = get_next_packet(soc, soc_buffers)
+
+            response = parse_packet(packet, client_info[soc])
             if packet == None:
-                response = {"type": "leave", "nick": client_info[soc]["nick"]}
                 sockets.remove(soc)
                 client_info.pop(soc)
-            else:
-                response = parse_packet(packet, client_info[soc])
 
             send_response(response, sockets, listener)
 
