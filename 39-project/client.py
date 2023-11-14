@@ -21,16 +21,23 @@ def send_message(message, s):
     send_packet({"type": "chat", "message": message}, s)
 
 
+def send_pm(to, message, s):
+    send_packet({"type": "pm", "to": {to}, "message": message}, s)
+
+
 def send_hello(nick, s):
     send_packet({"type": "hello", "nick": nick}, s)
 
 
-def command(message):
-    cmd = message[1:]
-    if cmd == "q":
+def command(input, s):
+    cmd, *data = input.split(" ")
+    if cmd == "/q":
         return "quit"
+    elif cmd == "/message":
+        send_pm(data[0], " ".join(data[1:]), s)
     else:
-        print_message(f"command {cmd} not supported.")
+        print_message(f"command `{cmd}` not supported.")
+
 
 def print_packet(packet):
     packet = json.loads(packet)
@@ -43,10 +50,9 @@ def print_packet(packet):
         print_message(f'*** {packet["nick"]} has left the chat')
 
 
-
 def receive_message(s: socket.socket):
     buffers = {s: b""}
-    
+
     while True:
         packet = get_next_packet(s, buffers)
         print_packet(packet)
@@ -76,8 +82,8 @@ def main(argv):
             break
 
         if message.startswith("/"):
-            action = command(message)
-            if action == "quit":
+            cmd = command(message, s)
+            if cmd == "quit":
                 break
         else:
             send_message(message, s)

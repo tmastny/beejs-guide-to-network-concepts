@@ -6,11 +6,51 @@ import json
 RECV_SIZE = 5
 
 
+class Client:
+    def __init__(self, socket):
+        self.socket = socket
+        self.nick = None
+        self.buffer = b""
+
+# sockets: {nick, buffer}
+class Clients:
+    def __init__(self):
+        self.sockets: dict = {}
+        self.nicks: dict = {}
+
+    def add(self, socket):
+        self.sockets[socket] = Client(socket)
+
+    def set(self, socket, nick):
+        client = self.sockets[socket]
+        client.nick = nick
+
+        self.nicks[nick] = client
+
+    def getnick(self, socket):
+        return self.sockets[socket].nick
+
+    def getsocket(self, nick):
+        return self.nicks[nick].socket
+
+    def remove(self, socket):
+        nick = self.getnick(socket)
+        self.sockets.pop(socket)
+
+        self.nicks.pop(nick)
+
+    def __iter__(self):
+        return self.sockets.__iter__()
+
+    def __contains__(self, key):
+        return self.sockets.__contains__(key)
+
+
 def send_response(response, sockets, listener):
     response = json.dumps(response).encode()
 
     nbytes = len(response).to_bytes(2)
-    
+
     response = nbytes + response
     print(f"Sending... {response}")
 
@@ -85,8 +125,8 @@ def run_server(port):
                 continue
 
             packet = get_next_packet(soc, soc_buffers)
-
             response = parse_packet(packet, client_info[soc])
+
             if packet == None:
                 sockets.remove(soc)
                 client_info.pop(soc)
