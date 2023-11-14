@@ -9,6 +9,11 @@ RECV_SIZE = 5
 def send_response(response, sockets, listener):
     response = json.dumps(response).encode()
 
+    nbytes = len(response).to_bytes(2)
+    
+    response = nbytes + response
+    print(f"Sending... {response}")
+
     for s in sockets:
         if s == listener:
             continue
@@ -17,7 +22,6 @@ def send_response(response, sockets, listener):
 
 
 def parse_packet(packet, client_info: dict) -> dict:
-    print(packet)
     if packet == None:
         return {"type": "leave", "nick": client_info["nick"]}
 
