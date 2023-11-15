@@ -22,12 +22,32 @@ def send_message(message, s):
 
 
 def send_pm(to, message, s):
-    print_message(f"{nick} -> {to}: {message}")
+    # it seems a little hacky to only handle on message type on
+    # the client side.
+    # A couple options:
+    #   1. two pm types: "pmfrom", "pmto". Then on the server-side
+    #      `build_response` should send a *list* of responses, that
+    #      `send_response` loops over. The sender and recipient get
+    #      "pmto" and "pmfrom" events.
+    #   2. one "pm", but send "from" and "to" in payload, then the server
+    #      sends both the message, with only one client-side formatting.
+    # I'm going to go with number two. This violates the idea in the "chat"
+    # type that we shouldn't send payload data the server can infer, but
+    # other options seem much more complicated.
+    # Wait, but we can only *send* "to" and still recieve "from" and "to"!
     send_packet({"type": "pm", "to": to, "message": message}, s)
 
 
 def send_hello(nick, s):
     send_packet({"type": "hello", "nick": nick}, s)
+
+
+def send_users(s):
+    send_packet({"type": "users"}, s)
+
+
+def send_emote(message, s):
+    send_packet({"type": "emote", "message": message}, s)
 
 
 def command(input, s):
@@ -36,6 +56,10 @@ def command(input, s):
         return "quit"
     elif cmd == "/message":
         send_pm(data[0], " ".join(data[1:]), s)
+    elif cmd == "/users":
+        send_users(s)
+    elif cmd == "/me":
+        send_emote(" ".join(data), s)
     else:
         print_message(f"command `{cmd}` not supported.")
 
@@ -50,9 +74,13 @@ def print_packet(packet):
     elif packet["type"] == "leave":
         print_message(f'*** {packet["nick"]} has left the chat')
     elif packet["type"] == "pm":
-        print_message(f'{packet["from"]} -> {nick}: {packet["message"]}')
+        print_message(f'{packet["from"]} -> {packet["to"]}: {packet["message"]}')
     elif packet["type"] == "error":
         print_message(f'*** error: {packet["message"]}')
+    elif packet["type"] == "users":
+        print_message(f'*** users: {", ".join(packet["users"])}')
+    elif packet["type"] == "emote":
+        print_message(f'[{packet["nick"]} {packet["message"]}]')
 
 
 def receive_message(s: socket.socket):

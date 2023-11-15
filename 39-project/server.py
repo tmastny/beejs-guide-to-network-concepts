@@ -87,22 +87,39 @@ def build_response(packet, sender: socket.socket, clients: Clients):
 
     elif payload["type"] == "pm":
         sender_nick = clients.getnick(sender)
-        response = {"type": "pm", "from": sender_nick, "message": payload["message"]}
+        response = {
+            "type": "pm",
+            "from": sender_nick,
+            "to": payload["to"],
+            "message": payload["message"],
+        }
+
+        recipients = Clients.SingleClient(sender)
 
         to_nick = payload["to"]
         if to_nick in clients.nicks:
             to_soc = clients.getsocket(payload["to"])
-            recipient = Clients.SingleClient(to_soc)
+            recipients.add(to_soc)
         else:
             response = {
                 "type": "error",
-                "message": f"User {to_nick} is not in this chatroom",
+                "message": f"user {to_nick} is not in this chatroom",
             }
-            recipient = Clients.SingleClient(sender)
 
-        return (response, recipient)
+        return (response, recipients)
+    elif payload["type"] == "users":
+        users = [nick for nick in clients.nicks]
+        response = {"type": "users", "users": users}
+
+        return (response, Clients.SingleClient(sender))
+    elif payload["type"] == "emote":
+        sender_nick = clients.getnick(sender)
+        response = {"type": "emote", "nick": sender_nick, "message": payload["message"]}
+
+        return (response, clients)
     else:
         raise ValueError(f'Payload {payload["type"]} not supported.')
+
 
 def get_next_packet(s: socket.socket, client_info: dict):
     buffer = client_info["buffer"]
