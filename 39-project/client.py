@@ -22,7 +22,8 @@ def send_message(message, s):
 
 
 def send_pm(to, message, s):
-    send_packet({"type": "pm", "to": {to}, "message": message}, s)
+    print_message(f"{nick} -> {to}: {message}")
+    send_packet({"type": "pm", "to": to, "message": message}, s)
 
 
 def send_hello(nick, s):
@@ -48,10 +49,12 @@ def print_packet(packet):
         print_message(f'*** {packet["nick"]} has joined the chat')
     elif packet["type"] == "leave":
         print_message(f'*** {packet["nick"]} has left the chat')
+    elif packet["type"] == "pm":
+        print_message(f'{packet["from"]} -> {nick}: {packet["message"]}')
 
 
 def receive_message(s: socket.socket):
-    buffers = {s: b""}
+    buffers = {"buffer": b""}
 
     while True:
         packet = get_next_packet(s, buffers)
@@ -64,11 +67,7 @@ def setup_ui(s):
     t1.start()
 
 
-def main(argv):
-    nick = argv[1]
-    address = argv[2]
-    port = int(argv[3])
-
+def main():
     s = socket.socket()
     s.connect((address, port))
     send_hello(nick, s)
@@ -90,4 +89,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    nick = sys.argv[1]
+    address = sys.argv[2]
+    port = int(sys.argv[3])
+
+    sys.exit(main())

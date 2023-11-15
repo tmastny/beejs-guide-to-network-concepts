@@ -6,32 +6,34 @@ import json
 RECV_SIZE = 5
 
 
-class Client:
-    def __init__(self, socket):
-        self.socket = socket
-        self.nick = None
-        self.buffer = b""
-
-# sockets: {nick, buffer}
 class Clients:
-    def __init__(self):
-        self.sockets: dict = {}
+    def __init__(self, listener=None):
+        self.listener = listener
+        self.sockets = {}
+        self.add(listener)
+
         self.nicks: dict = {}
 
+    @classmethod
+    def SingleClient(cls, socket):
+        client = cls()
+        client.add(socket)
+
+        return client
+
     def add(self, socket):
-        self.sockets[socket] = Client(socket)
+        self.sockets[socket] = {"buffer": b""}
 
     def set(self, socket, nick):
-        client = self.sockets[socket]
-        client.nick = nick
+        self.sockets[socket]["nick"] = nick
 
-        self.nicks[nick] = client
+        self.nicks[nick] = socket
 
     def getnick(self, socket):
-        return self.sockets[socket].nick
+        return self.sockets[socket]["nick"]
 
     def getsocket(self, nick):
-        return self.nicks[nick].socket
+        return self.nicks[nick]
 
     def remove(self, socket):
         nick = self.getnick(socket)
@@ -39,14 +41,18 @@ class Clients:
 
         self.nicks.pop(nick)
 
+    def __getitem__(self, key):
+        return self.sockets.__getitem__(key)
+
     def __iter__(self):
-        return self.sockets.__iter__()
+        skip_listener = lambda x: x != self.listener
+        return filter(skip_listener, self.sockets.__iter__())
 
     def __contains__(self, key):
         return self.sockets.__contains__(key)
 
 
-def send_response(response, sockets, listener):
+def send_response(response, clients):
     response = json.dumps(response).encode()
 
     nbytes = len(response).to_bytes(2)
@@ -54,37 +60,52 @@ def send_response(response, sockets, listener):
     response = nbytes + response
     print(f"Sending... {response}")
 
-    for s in sockets:
-        if s == listener:
-            continue
-
+    for s in clients:
         s.sendall(response)
 
 
-def parse_packet(packet, client_info: dict) -> dict:
+def build_response(packet, sender: socket.socket, clients: Clients):
+    """
+    -> (response, recipients)
+    """
     if packet == None:
-        return {"type": "leave", "nick": client_info["nick"]}
+        return ({"type": "leave", "nick": clients.getnick(sender)}, clients)
 
     payload = json.loads(packet)
 
     if payload["type"] == "hello":
-        client_info["nick"] = payload["nick"]
-
-        return {"type": "join", "nick": client_info["nick"]}
+        clients.set(sender, payload["nick"])
+        return ({"type": "join", "nick": payload["nick"]}, clients)
 
     elif payload["type"] == "chat":
-        return {
+        response = {
             "type": "chat",
-            "nick": client_info["nick"],
+            "nick": clients.getnick(sender),
             "message": payload["message"],
         }
+        return (response, clients)
 
+    elif payload["type"] == "pm":
+        sender_nick = clients.getnick(sender)
+        response = {"type": "pm", "from": sender_nick, "message": payload["message"]}
+
+        to_nick = payload["to"]
+        if to_nick in clients.nicks:
+            to_soc = clients.getsocket(payload["to"])
+            recipient = Clients.SingleClient(to_soc)
+        else:
+            response = {
+                "type": "error",
+                "message": f"User {to_nick} is not in this chatroom",
+            }
+            recipient = Clients.SingleClient(sender)
+
+        return (response, recipient)
     else:
         raise ValueError(f'Payload {payload["type"]} not supported.')
 
-
-def get_next_packet(s: socket.socket, buffers: dict):
-    buffer = buffers[s]
+def get_next_packet(s: socket.socket, client_info: dict):
+    buffer = client_info["buffer"]
     while True:
         buffer += s.recv(RECV_SIZE)
 
@@ -96,7 +117,7 @@ def get_next_packet(s: socket.socket, buffers: dict):
             if len(buffer) >= 2 + length:
                 packet = buffer[2 : length + 2]
                 buffer = buffer[2 + length :]
-                buffers[s] = buffer
+                client_info["buffer"] = buffer
 
                 return packet
 
@@ -108,30 +129,24 @@ def run_server(port):
     listener.bind(("", port))
     listener.listen()
 
-    sockets = {listener}
-    soc_buffers = {}
-    client_info = {}
+    clients = Clients(listener)
 
     while True:
-        ready_to_read, _, _ = select.select(sockets, {}, {})
+        ready_soc, _, _ = select.select(clients.sockets, {}, {})
 
-        for soc in ready_to_read:
+        for soc in ready_soc:
             if soc == listener:
                 new_soc, _ = soc.accept()
-                sockets.add(new_soc)
-                soc_buffers[new_soc] = b""
-
-                client_info[new_soc] = {}
+                clients.add(new_soc)
                 continue
 
-            packet = get_next_packet(soc, soc_buffers)
-            response = parse_packet(packet, client_info[soc])
+            packet = get_next_packet(soc, clients[soc])
+            response, recipients = build_response(packet, soc, clients)
 
             if packet == None:
-                sockets.remove(soc)
-                client_info.pop(soc)
+                clients.remove(soc)
 
-            send_response(response, sockets, listener)
+            send_response(response, recipients)
 
 
 def main(argv):
