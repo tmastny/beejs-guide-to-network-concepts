@@ -51,6 +51,8 @@ def print_packet(packet):
         print_message(f'*** {packet["nick"]} has left the chat')
     elif packet["type"] == "pm":
         print_message(f'{packet["from"]} -> {nick}: {packet["message"]}')
+    elif packet["type"] == "error":
+        print_message(f'*** error: {packet["message"]}')
 
 
 def receive_message(s: socket.socket):
