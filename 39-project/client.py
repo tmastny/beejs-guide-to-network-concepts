@@ -22,24 +22,19 @@ def send_message(message, s):
 
 
 def send_pm(to, message, s):
-    # it seems a little hacky to only handle on message type on
-    # the client side.
-    # A couple options:
-    #   1. two pm types: "pmfrom", "pmto". Then on the server-side
-    #      `build_response` should send a *list* of responses, that
-    #      `send_response` loops over. The sender and recipient get
-    #      "pmto" and "pmfrom" events.
-    #   2. one "pm", but send "from" and "to" in payload, then the server
-    #      sends both the message, with only one client-side formatting.
-    # I'm going to go with number two. This violates the idea in the "chat"
-    # type that we shouldn't send payload data the server can infer, but
-    # other options seem much more complicated.
-    # Wait, but we can only *send* "to" and still recieve "from" and "to"!
     send_packet({"type": "pm", "to": to, "message": message}, s)
+
+
+def send_join(room, s):
+    send_packet({"type": "join", "room": room}, s)
 
 
 def send_hello(nick, s):
     send_packet({"type": "hello", "nick": nick}, s)
+
+
+def send_rooms(s):
+    send_packet({"type": "rooms"}, s)
 
 
 def send_users(s):
@@ -60,6 +55,10 @@ def command(input, s):
         send_users(s)
     elif cmd == "/me":
         send_emote(" ".join(data), s)
+    elif cmd == "/join":
+        send_join(data[0], s)
+    elif cmd == "/rooms":
+        send_rooms(s)
     else:
         print_message(f"command `{cmd}` not supported.")
 
@@ -70,9 +69,9 @@ def print_packet(packet):
     if packet["type"] == "chat":
         print_message(f'{packet["nick"]}: {packet["message"]}')
     elif packet["type"] == "join":
-        print_message(f'*** {packet["nick"]} has joined the chat')
+        print_message(f'*** {packet["nick"]} has joined {packet["room"]}')
     elif packet["type"] == "leave":
-        print_message(f'*** {packet["nick"]} has left the chat')
+        print_message(f'*** {packet["nick"]} has left {packet["room"]}')
     elif packet["type"] == "pm":
         print_message(f'{packet["from"]} -> {packet["to"]}: {packet["message"]}')
     elif packet["type"] == "error":
@@ -81,6 +80,8 @@ def print_packet(packet):
         print_message(f'*** users: {", ".join(packet["users"])}')
     elif packet["type"] == "emote":
         print_message(f'[{packet["nick"]} {packet["message"]}]')
+    elif packet["type"] == "rooms":
+        print_message(f'*** rooms: {", ".join(packet["rooms"])}')
 
 
 def receive_message(s: socket.socket):
